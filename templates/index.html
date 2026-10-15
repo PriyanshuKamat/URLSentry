@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URLSentry - Automated URL Risk Scorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #030712;
+            --neon-cyan: #00f0ff;
+            --neon-emerald: #10b981;
+            --neon-amber: #f59e0b;
+            --neon-rose: #f43f5e;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(0, 240, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-deep); color: var(--text-main); overflow-x: hidden; }
+
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 50px; background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+        }
+        .logo { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 1.25rem; color: var(--neon-cyan); letter-spacing: 2px; display: flex; align-items: center; gap: 10px; }
+        .nav-links { display: flex; gap: 30px; list-style: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; }
+        .nav-links a:hover { color: var(--neon-cyan); }
+
+        section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 100px 20px; position: relative; }
+        .container { max-width: 1100px; width: 100%; margin: 0 auto; }
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 45px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+
+        #hero { text-align: center; }
+        .badge { display: inline-block; padding: 8px 16px; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); border-radius: 50px; font-size: 0.85rem; font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 3.2rem; font-weight: 900; line-height: 1.2; margin-bottom: 15px; background: linear-gradient(135deg, #ffffff 30%, var(--neon-cyan) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { font-size: 1.05rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 30px auto; line-height: 1.6; }
+
+        /* Team Section Styling */
+        .team-container { background: rgba(3, 7, 18, 0.6); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 16px; padding: 30px; margin-top: 30px; box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.05); }
+        .team-title { font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: var(--neon-cyan); letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; }
+        .team-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 12px; text-align: center; transition: all 0.3s ease; }
+        .team-card:hover { border-color: var(--neon-cyan); transform: translateY(-3px); background: rgba(0, 240, 255, 0.03); }
+        .team-card h3 { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+        .team-card p { font-size: 0.75rem; color: var(--neon-cyan); font-family: 'Orbitron', sans-serif; }
+
+        /* HOD Featured Card */
+        .hod-wrapper { margin-top: 20px; }
+        .hod-card { background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(0, 136, 255, 0.03)); border: 1px solid var(--neon-cyan); border-radius: 14px; padding: 22px; text-align: center; box-shadow: 0 0 25px rgba(0, 240, 255, 0.15); }
+        .hod-label { font-size: 0.75rem; color: var(--text-muted); font-family: 'Orbitron', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+        .hod-name { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; font-weight: 800; color: #ffffff; letter-spacing: 1px; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
+
+        .section-title { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; margin-bottom: 30px; display: flex; align-items: center; gap: 15px; }
+        .section-title i { color: var(--neon-cyan); }
+        
+        .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; }
+        p.desc { font-size: 1.05rem; line-height: 1.7; color: var(--text-muted); margin-bottom: 20px; }
+        
+        .feature-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+        .feature-list li { display: flex; align-items: center; gap: 14px; font-size: 0.95rem; color: var(--text-main); background: rgba(255, 255, 255, 0.02); padding: 12px 18px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.05); }
+
+        .tech-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; margin-top: 30px; }
+        .tech-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 25px 20px; border-radius: 14px; text-align: center; }
+        .tech-card i { font-size: 2.5rem; color: var(--neon-cyan); margin-bottom: 12px; }
+        .tech-card h4 { font-size: 0.95rem; font-weight: 600; }
+
+        .scope-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-top: 30px; }
+        .scope-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); padding: 30px; border-radius: 16px; position: relative; overflow: hidden; }
+        .scope-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--neon-cyan); }
+        .scope-card h3 { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 12px; color: var(--text-main); }
+
+        .analyzer-box { background: rgba(15, 23, 42, 0.85); border: 1px solid var(--neon-cyan); border-radius: 20px; padding: 40px; box-shadow: 0 0 40px rgba(0, 240, 255, 0.15); }
+        .input-group { display: flex; gap: 15px; margin-bottom: 25px; }
+        .input-group input { flex: 1; background: rgba(3, 7, 18, 0.9); border: 1px solid rgba(255, 255, 255, 0.15); padding: 16px 20px; border-radius: 12px; color: white; font-size: 1rem; outline: none; }
+        .btn-primary { background: linear-gradient(135deg, var(--neon-cyan), #0088ff); color: var(--bg-deep); border: none; padding: 0 30px; border-radius: 12px; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+
+        .presets { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; }
+        .presets span { font-size: 0.85rem; color: var(--text-muted); }
+        .preset-chip { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
+
+        .results-panel { background: rgba(3, 7, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 25px; display: none; margin-top: 20px; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; }
+        .risk-badge { padding: 6px 16px; border-radius: 50px; font-family: 'Orbitron', sans-serif; font-size: 0.85rem; font-weight: 700; }
+        .risk-low { background: rgba(16, 185, 129, 0.15); color: var(--neon-emerald); border: 1px solid var(--neon-emerald); }
+        .risk-med { background: rgba(245, 158, 11, 0.15); color: var(--neon-amber); border: 1px solid var(--neon-amber); }
+        .risk-high { background: rgba(244, 63, 94, 0.15); color: var(--neon-rose); border: 1px solid var(--neon-rose); }
+        .flags-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .flags-list li { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
+
+        .footer-action { text-align: center; padding: 80px 20px; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <nav>
+        <div class="logo"><i class="fa-solid fa-shield-halved"></i> URLSENTRY</div>
+        <ul class="nav-links">
+            <li><a href="#hero">Team</a></li>
+            <li><a href="#problem">Problem</a></li>
+            <li><a href="#solution">Solution</a></li>
+            <li><a href="#tech">Tech Stack</a></li>
+            <li><a href="#future">Future Scope</a></li>
+            <li><a href="#demo">Live Demo</a></li>
+        </ul>
+    </nav>
+
+    <!-- 1. Hero & Team -->
+    <section id="hero">
+        <div class="container">
+            <div class="badge">BCA Data Science & Cyber Security Project</div>
+            <h1>Automated Phishing URL & Domain Risk Scorer</h1>
+            <p class="subtitle">An advanced heuristic threat intelligence web application powered by Python.</p>
+            
+            <div class="team-container">
+                <div class="team-title"><i class="fa-solid fa-users"></i> Project Development Team</div>
+                <div class="team-grid">
+                    <div class="team-card">
+                        <h3>Priyanshu Kamat</h3>
+                        <p>BCA Data Science & CYS</p>
+                    </div>
+                    <div class="team-card">
+                        <h3>Hamid Hussain</h3>
+                        <p>BCA Data Science & CYS</p>
+                    </div>
+                    <div class="team-card">
+                        <h3>Bilques Anjum</h3>
+                        <p>BCA Data Science & CYS</p>
+                    </div>
+                    <div class="team-card">
+                        <h3>Subhanshu Pandit</h3>
+                        <p>BCA Data Science & CYS</p>
+                    </div>
+                </div>
+
+                <div class="hod-wrapper">
+                    <div class="hod-card">
+                        <div class="hod-label"><i class="fa-solid fa-award"></i> Under the Esteemed Guidance of HOD</div>
+                        <div class="hod-name">Mr. Somnath Koley</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Problem Statement -->
+    <section id="problem">
+        <div class="container">
+            <div class="glass-card">
+                <div class="section-title"><i class="fa-solid fa-triangle-exclamation" style="color: var(--neon-rose);"></i> Problem Statement</div>
+                <div class="grid-2">
+                    <div>
+                        <p class="desc">Phishing remains one of the most pervasive cyber threat vectors used by malicious actors to compromise corporate networks and steal user credentials.</p>
+                        <p class="desc" style="margin-bottom: 0;">Traditional security filters often fail against newly registered domains and obfuscated URLs. Users and organizations need rapid automated mechanisms to inspect links securely.</p>
+                    </div>
+                    <div>
+                        <ul class="feature-list">
+                            <li><i class="fa-solid fa-circle-xmark" style="color: var(--neon-rose); font-size: 1.2rem;"></i> Billions lost annually to credential harvesting.</li>
+                            <li><i class="fa-solid fa-circle-xmark" style="color: var(--neon-rose); font-size: 1.2rem;"></i> Zero-day phishing domains bypass static blocklists.</li>
+                            <li><i class="fa-solid fa-circle-xmark" style="color: var(--neon-rose); font-size: 1.2rem;"></i> Manual link verification is slow & prone to error.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Solution -->
+    <section id="solution">
+        <div class="container">
+            <div class="glass-card">
+                <div class="section-title"><i class="fa-solid fa-circle-check"></i> Proposed Solution</div>
+                <div class="grid-2">
+                    <div>
+                        <p class="desc">Our project delivers an automated heuristic scoring engine running on a secure Python backend that inspects URLs instantly.</p>
+                        <ul class="feature-list">
+                            <li><i class="fa-solid fa-check"></i> <strong>Structural Anomaly Inspection:</strong> Parses excessive subdomains, `@` symbols, and IP hostnames.</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>SSL Socket Validation:</strong> Performs underlying cryptographic certificate checks.</li>
+                            <li><i class="fa-solid fa-check"></i> <strong>Quantitative Risk Index:</strong> Calculates a 0-100 score categorizing links into Safe, Suspicious, or High Risk.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div style="background: rgba(0,240,255,0.03); border: 1px solid rgba(0,240,255,0.2); border-radius: 14px; padding: 25px; text-align: center;">
+                            <i class="fa-solid fa-shield-virus" style="font-size: 3.5rem; color: var(--neon-cyan); margin-bottom: 15px;"></i>
+                            <h3 style="font-family: 'Orbitron', sans-serif; margin-bottom: 10px;">Python Backend Engine</h3>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">Real-time server-side intelligence processing via Flask API.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Tech Stack -->
+    <section id="tech">
+        <div class="container">
+            <div class="glass-card">
+                <div class="section-title"><i class="fa-solid fa-code"></i> Technology Stack Used</div>
+                <div class="tech-grid">
+                    <div class="tech-card"><i class="fa-brands fa-python"></i><h4>Python 3</h4></div>
+                    <div class="tech-card"><i class="fa-solid fa-server"></i><h4>Flask API</h4></div>
+                    <div class="tech-card"><i class="fa-brands fa-html5"></i><h4>HTML5 & CSS3</h4></div>
+                    <div class="tech-card"><i class="fa-brands fa-js"></i><h4>Vanilla JS</h4></div>
+                    <div class="tech-card"><i class="fa-solid fa-cube"></i><h4>Three.js 3D</h4></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Future Scope -->
+    <section id="future">
+        <div class="container">
+            <div class="glass-card">
+                <div class="section-title"><i class="fa-solid fa-rocket"></i> Future Scope & Upgrades</div>
+                <div class="scope-grid">
+                    <div class="scope-card">
+                        <h3>Browser Extension Integration</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Build a Chrome/Firefox extension that automatically scans every visited URL.</p>
+                    </div>
+                    <div class="scope-card">
+                        <h3>Machine Learning Model</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Train a Random Forest classifier on malicious URLs to detect zero-day threats.</p>
+                    </div>
+                    <div class="scope-card">
+                        <h3>WHOIS & Threat Intel APIs</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Integrate domain age registry lookups and VirusTotal API feeds.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Live Python Analyzer Demo -->
+    <section id="demo">
+        <div class="container">
+            <div class="analyzer-box">
+                <div class="section-title" style="font-size: 1.8rem; margin-bottom: 15px;"><i class="fa-solid fa-terminal"></i> Live Python Backend Demo</div>
+                <p style="color: var(--text-muted); margin-bottom: 25px;">Enter a URL below to execute the backend Python scoring script:</p>
+
+                <div class="presets">
+                    <span>Quick Test:</span>
+                    <div class="preset-chip" onclick="loadPreset('https://accounts.google.com')">Safe URL</div>
+                    <div class="preset-chip" onclick="loadPreset('http://192.168.1.50/login-verify')">IP & Keyword</div>
+                    <div class="preset-chip" onclick="loadPreset('https://secure-auth-update-account@phishing-test.tk/auth')">High Risk Phishing</div>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="urlInput" placeholder="Enter target URL (e.g., https://example.com)...">
+                    <button class="btn-primary" onclick="runPythonAnalysis()"><i class="fa-solid fa-magnifying-glass"></i> Run Python Analysis</button>
+                </div>
+
+                <div id="resultsPanel" class="results-panel">
+                    <div class="results-header">
+                        <div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted);">Target Domain: <span id="resDomain" style="color: white; font-weight: 600;"></span></p>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Risk Score: <span id="resScore" style="color: white; font-weight: 600;"></span></p>
+                        </div>
+                        <div id="resBadge" class="risk-badge">SAFE</div>
+                    </div>
+                    <p style="font-size: 0.9rem; font-family: 'Orbitron', sans-serif; margin-bottom: 10px;">PYTHON ENGINE FLAGS:</p>
+                    <ul id="resFlags" class="flags-list"></ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="footer-action">
+        <div class="container">
+            <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.8rem; margin-bottom: 15px;">Explore the Codebase</h2>
+            <a href="https://github.com" target="_blank" class="btn-primary" style="padding: 16px 35px; font-size: 1rem;"><i class="fa-brands fa-github"></i> View GitHub Repository</a>
+        </div>
+    </div>
+
+    <!-- Three.js Background Script -->
+    <script>
+        const canvas = document.getElementById('bg-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const particlesCount = 1500;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i = 0; i < particlesCount * 3; i++) { posArray[i] = (Math.random() - 0.5) * 15; }
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ size: 0.015, color: 0x00f0ff, transparent: true, opacity: 0.7 });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+        camera.position.z = 3;
+
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX / window.innerWidth - 0.5;
+            mouseY = e.clientY / window.innerHeight - 0.5;
+        });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            particlesMesh.rotation.y = elapsedTime * 0.05 + mouseX * 0.3;
+            particlesMesh.rotation.x = elapsedTime * 0.03 + mouseY * 0.3;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function loadPreset(url) {
+            document.getElementById('urlInput').value = url;
+            runPythonAnalysis();
+        }
+
+        async function runPythonAnalysis() {
+            const url = document.getElementById('urlInput').value.trim();
+            if(!url) { alert('Please enter a valid URL.'); return; }
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                const results = await response.json();
+                
+                const panel = document.getElementById('resultsPanel');
+                panel.style.display = 'block';
+                document.getElementById('resDomain').textContent = results.domain;
+                document.getElementById('resScore').textContent = results.score;
+                
+                const badge = document.getElementById('resBadge');
+                badge.textContent = results.classification;
+                badge.className = 'risk-badge ' + (results.classification.includes('HIGH') ? 'risk-high' : results.classification.includes('MEDIUM') ? 'risk-med' : 'risk-low');
+
+                const flagsList = document.getElementById('resFlags');
+                flagsList.innerHTML = '';
+                results.flags.forEach(flag => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--neon-cyan);"></i> ${flag}`;
+                    flagsList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error connecting to Python backend:', error);
+                alert('Make sure your Python Flask server (app.py) is running in your terminal!');
+            }
+        }
+    </script>
+</body>
+</html>
